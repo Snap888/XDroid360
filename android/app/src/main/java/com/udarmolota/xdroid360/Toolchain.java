@@ -41,7 +41,10 @@ final class Toolchain {
 
     /** Whether this APK can build games at all (a dev build may lack the toolchain). */
     static boolean present(Context context) {
-        return new File(tools(context), "libclang.so").isFile() && assetExists(context, KIT_ASSET);
+        return new File(tools(context), "libclang.so").isFile()
+                && new File(tools(context), "libdxcompiler.so").isFile()
+                && new File(tools(context), "libshaderlib.so").isFile()
+                && assetExists(context, KIT_ASSET);
     }
 
     /** The profiles in the APK, by their recipes (read from the zips, not unpacked). */

@@ -607,7 +607,16 @@ final class RecipeRunner {
     private int exec(List<String> argv, File cwd, File log, Lines lines) throws IOException, Recipe.Failure {
         if (cancelled.get()) throw new Recipe.Failure("cancelled", "");
         ProcessBuilder pb = new ProcessBuilder(argv).directory(cwd).redirectErrorStream(true);
-        pb.environment().put("TMPDIR", new File(work, "tmp").getPath());
+        Map<String, String> environment = pb.environment();
+        environment.put("TMPDIR", new File(work, "tmp").getPath());
+        // libshaderlib.so and the other compiler tools are executed as ELF programs from
+        // ApplicationInfo.nativeLibraryDir. Android's linker does not reliably search the
+        // executable's directory for DT_NEEDED dependencies of an exec'd program. Export the
+        // APK's native library directory explicitly so libdxcompiler.so is resolvable.
+        String nativeLibDir = Toolchain.tools(context).getAbsolutePath();
+        String inheritedLibraryPath = environment.get("LD_LIBRARY_PATH");
+        environment.put("LD_LIBRARY_PATH", inheritedLibraryPath == null || inheritedLibraryPath.isEmpty()
+                ? nativeLibDir : nativeLibDir + File.pathSeparator + inheritedLibraryPath);
         Process p = pb.start();
         running.add(p);
         // The tool's peak memory (VmHWM), into its log: what the recipes' "jobs" numbers come from.
